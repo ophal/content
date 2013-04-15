@@ -4,11 +4,12 @@ local pager, l, page_set_title, arg = pager, l, page_set_title, arg
 local tonumber, format_date, ophal, read = tonumber, format_date, ophal, io.read
 local empty, add_js, _SESSION = seawolf.variable.empty, add_js, _SESSION
 local header, json, type, time = header, require 'dkjson', type, os.time
+local print_t, require = print_t, require
 local error = error
 
 module 'ophal.modules.content'
 
-local user_load
+local user_load, user_is_logged_in, user_access
 
 --[[
   Implements hook_init().
@@ -38,7 +39,7 @@ end
 function content_load(id)
   id = tonumber(id or 0)
 
-  rs, err = db_query('SELECT id, title, teaser, body, status, created FROM content WHERE id = ?', id)
+  rs, err = db_query('SELECT * FROM content WHERE id = ?', id)
   if err then
     error(err)
   end
@@ -152,7 +153,13 @@ function router()
       return theme.content_form(content)
     else
       page_set_title(content.title)
-      return theme.content_page(content)
+      return function ()
+        print_t{'content_page',
+          account = user_load{id = content.user_id},
+          content = content,
+          format_date = format_date
+        }
+      end
     end
   else
     return frontpage()
@@ -187,20 +194,6 @@ function frontpage()
   end
 
   return theme.content_frontpage(rows) .. (num_pages > 1 and theme.pager(pager('frontpage', num_pages, current_page)) or '')
-end
-
-function theme.content_page(content)
-  local output = {
-    '<div class="content-page">',
-    '<div class="submitted">Submitted by ', '', ' on ', format_date(content.created), '</div>',
-    content.teaser or '', [[
-]],
-    content.body or '',
-    theme.content_links(content, true),
-    '</div>',
-  }
-
-  return tconcat(output)
 end
 
 function theme.content_teaser(content)
