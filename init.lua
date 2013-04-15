@@ -189,23 +189,14 @@ function frontpage()
     error(err)
   else
     for row in rs:rows(true) do
-      tinsert(rows, theme.content_teaser(row))
+      tinsert(rows, function () print_t{'content_teaser', content = row} end)
     end
   end
 
-  return theme.content_frontpage(rows) .. (num_pages > 1 and theme.pager(pager('frontpage', num_pages, current_page)) or '')
-end
-
-function theme.content_teaser(content)
-  local output = {
-    '<div class="content-teaser">',
-    '<h2>', l(content.title, 'content/' .. content.id), '</h2>',
-    content.teaser or '',
-    theme.content_links(content),
-    '</div>',
-  }
-
-  return tconcat(output)
+  return function ()
+    print_t{'content_frontpage', rows = rows}
+    return (num_pages > 1 and theme.pager(pager('frontpage', num_pages, current_page)) or '')
+  end
 end
 
 function theme.content_links(content, page)
@@ -224,14 +215,14 @@ function theme.content_links(content, page)
   return theme.item_list{list = links, class = 'content-links'}
 end
 
-function theme.content_frontpage(rows)
+function theme.content_frontpage(variables)
+  local rows = variables.rows
+
   local output = {}
 
   for _, row in pairs(rows) do
-    tinsert(output, row)
+    row()
   end
-
-  return tconcat(output)
 end
 
 function theme.content_form(content)
