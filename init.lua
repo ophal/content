@@ -131,7 +131,7 @@ function frontpage()
   num_pages = ceil(count/ipp)
 
   -- Render list
-  rs, err = db_query('SELECT id, title, teaser, created FROM content WHERE status = 1 ORDER BY created DESC LIMIT ?, ?', (current_page -1)*ipp, ipp)
+  rs, err = db_query('SELECT * FROM content WHERE status = 1 ORDER BY created DESC LIMIT ?, ?', (current_page -1)*ipp, ipp)
   if err then
     error(err)
   else
@@ -147,7 +147,10 @@ function theme.content_page(content)
   local output = {
     '<div class="content-page">',
     '<div class="submitted">Submitted by ', '', ' on ', format_date(content.created), '</div>',
+    content.teaser or '', [[
+]],
     content.body or '',
+    theme.content_links(content, true),
     '</div>',
   }
 
@@ -159,10 +162,26 @@ function theme.content_teaser(content)
     '<div class="content-teaser">',
     '<h2>', l(content.title, 'content/' .. content.id), '</h2>',
     content.teaser or '',
+    theme.content_links(content),
     '</div>',
   }
 
   return tconcat(output)
+end
+
+function theme.content_links(content, page)
+  if page == nil then page = false end
+
+  local links = {}
+
+  if not page then
+    tinsert(links, l('Read more', 'content/' .. content.id))
+  end
+
+  if user_is_logged_in() then
+    tinsert(links, l('edit', 'content/' .. content.id .. '/edit'))
+  end
+  return theme.item_list{list = links, class = 'content-links'}
 end
 
 function theme.content_frontpage(rows)
