@@ -95,7 +95,9 @@ function router()
 
     if arg(2) == 'edit' then
       if not user_is_logged_in() then
+        page_set_title 'Access denied'
         header('status', 401)
+        return ''
       end
 
       add_js 'misc/jquery.js'
