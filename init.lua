@@ -92,7 +92,7 @@ function save_service()
         output.error = err
       elseif 'table' == type(parsed) and not empty(parsed) then
         if action == 'create' then
-          rs, err = db_query('INSERT INTO content(title, teaser, body, changed) VALUES(?, ?, ?, ?)', parsed.title, parsed.teaser, parsed.body, time())
+          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, created) VALUES(?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, time())
         elseif action == 'update' then
           rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, time(), id)
         end
