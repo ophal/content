@@ -15,6 +15,7 @@ local user_load
 ]]
 function init()
   db_query = env.db_query
+  db_last_insert_id = env.db_last_insert_id
   user_load = ophal.modules.user.user_load
   user_access = ophal.modules.user.user_access
   user_is_logged_in = ophal.modules.user.user_is_logged_in
@@ -45,37 +46,61 @@ function content_load(id)
   return rs:fetch(true)
 end
 
-function content_access(content)
-  return user_access('administer content') or (user_access('edit own content') and content.user_id == _SESSION.user.id)
+function content_access(content, action)
+  local account = _SESSION.user
+
+  if user_access 'administer content' then
+    return true
+  end
+
+  if action == 'create' then
+    return user_access 'create content'
+  elseif action == 'update' then
+    return user_access 'edit own content' and content.user_id == account.id
+  elseif action == 'read' then
+    return user_access 'access own content' and content.user_id == account.id
+  elseif action == 'delete' then
+    return user_access 'delete own content' and content.user_id == account.id
+  end
 end
 
 function save_service()
-  local input, parsed, pos, err, output, account
+  local input, parsed, pos, err, output, account, action, id
 
   if not user_is_logged_in() then
     header('status', 401)
   else
     header('content-type', 'application/json; charset=utf-8')
 
-    output = {edited = false}
-    input = read '*a'
-    parsed, pos, err = json.decode(input, 1, nil)
-    if err then
-      error(err)
-    elseif 'table' == type(parsed) and not empty(parsed.id) then
-      content = content_load(parsed.id)
-      if empty(content) then
-        error 'No such content.'
-      elseif not content_access(content) then
-        header('status', 401)
-      else
-        -- Save data
-        rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, time(), parsed.id)
+    id = tonumber(arg(2) or '')
+    action = empty(id) and 'create' or 'update'
+    output = {}
+
+    content = content_load(id)
+
+    if not content_access(content, action) then
+      header('status', 401)
+    elseif action == 'update' and empty(content) then
+      header('status', 404)
+      output.error = 'No such content.'
+    else
+      output.success = false
+      input = read '*a'
+      parsed, pos, err = json.decode(input, 1, nil)
+      if err then
+        output.error = err
+      elseif 'table' == type(parsed) and not empty(parsed) then
+        if action == 'create' then
+          rs, err = db_query('INSERT INTO content(title, teaser, body, changed) VALUES(?, ?, ?, ?)', parsed.title, parsed.teaser, parsed.body, time())
+        elseif action == 'update' then
+          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, time(), id)
+        end
+
         if err then
-          error(err)
+          output.error = err
         else
-          output.content_id = parsed.id
-          output.edited = true
+          output.content_id = action == 'create' and db_last_insert_id() or id
+          output.success = true
         end
       end
     end
@@ -93,8 +118,27 @@ function router()
   if not empty(id) then
     content = content_load(id)
 
+    if arg(1) == 'create' then
+      if not content_access(content, 'create') then
+        page_set_title 'Access denied'
+        header('status', 401)
+        return ''
+      end
+
+      add_js 'misc/jquery.js'
+      add_js 'misc/json2.js'
+      add_js 'modules/content/content.js'
+
+      page_set_title 'Create content'
+      return theme.content_form{}
+    elseif empty(content) then
+      page_set_title 'Page not found'
+      header('header', 404)
+      return ''
+    end
+
     if arg(2) == 'edit' then
-      if not content_access(content) then
+      if not content_access(content, 'update') then
         page_set_title 'Access denied'
         header('status', 401)
         return ''
@@ -180,7 +224,7 @@ function theme.content_links(content, page)
     tinsert(links, l('Read more', 'content/' .. content.id))
   end
 
-  if content_access(content) then
+  if content_access(content, 'update') then
     tinsert(links, l('edit', 'content/' .. content.id .. '/edit'))
   end
 
@@ -202,13 +246,13 @@ function theme.content_form(content)
 
   return tconcat{
 		'<form method="POST">',
-    '<div id="content_edit_form"><table class="form">',
+    ('<div id="%s"><table class="form">'):format(empty(content.id) and 'content_create_form' or 'content_edit_form'),
     theme.hidden{attributes = {id = 'content_id'}, value = content.id},
     row:format('Title', theme.textfield{attributes = {id = 'content_title', size = 60}, value = content.title}),
     row:format('Teaser', theme.textarea{attributes = {id = 'content_teaser', cols = 60, rows = 10}, value = content.teaser}),
     row:format('Body', theme.textarea{attributes = {id = 'content_body', cols = 60, rows = 15}, value = content.body}),
     row:format('Status', empty(content.status) and 'Unplished' or 'Published'),
-    row:format('Created on', format_date(content.created)),
+    row:format('Created on', content.created and format_date(content.created) or ''),
     ('<tr><td colspan="2" align="right">%s</td></tr>'):format(theme.button{attributes = {id = 'save_submit'}, value = 'Save'}),
     '</table></div>',
 		'</form>',
