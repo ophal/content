@@ -48,7 +48,7 @@ end
 function save_service()
   local input, parsed, pos, err, output, account
 
-  if not user_is_logged_in() then
+  if not user_is_logged_in() and user_access('administer content') then
     header('status', 401)
   else
     header('content-type', 'application/json; charset=utf-8')
@@ -94,7 +94,7 @@ function router()
     content = content_load(id)
 
     if arg(2) == 'edit' then
-      if not user_is_logged_in() then
+      if not user_is_logged_in() and user_access('administer content') then
         page_set_title 'Access denied'
         header('status', 401)
         return ''
@@ -180,9 +180,10 @@ function theme.content_links(content, page)
     tinsert(links, l('Read more', 'content/' .. content.id))
   end
 
-  if user_is_logged_in() then
+  if user_is_logged_in() and user_access('administer content') then
     tinsert(links, l('edit', 'content/' .. content.id .. '/edit'))
   end
+
   return theme.item_list{list = links, class = 'content-links'}
 end
 
