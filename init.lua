@@ -59,7 +59,7 @@ function content_access(content, action)
   elseif action == 'update' then
     return user_access 'edit own content' and content.user_id == account.id
   elseif action == 'read' then
-    return user_access 'access own content' and content.user_id == account.id
+    return user_access 'access content'
   elseif action == 'delete' then
     return user_access 'delete own content' and content.user_id == account.id
   end
@@ -119,6 +119,16 @@ function router()
   if not empty(id) then
     content = content_load(id)
 
+    if empty(content) then
+      page_set_title 'Page not found'
+      header('header', 404)
+      return ''
+    elseif not content_access(content, 'read') then
+      page_set_title 'Access denied'
+      header('status', 401)
+      return ''
+    end
+
     if arg(1) == 'create' then
       if not content_access(content, 'create') then
         page_set_title 'Access denied'
@@ -132,10 +142,6 @@ function router()
 
       page_set_title 'Create content'
       return theme.content_form{}
-    elseif empty(content) then
-      page_set_title 'Page not found'
-      header('header', 404)
-      return ''
     end
 
     if arg(2) == 'edit' then
@@ -229,7 +235,7 @@ function theme.content_form(content)
   local row = '<tr><td class="field-name" valign="top">%s:</td><td>%s</td></tr>'
 
   return tconcat{
-		'<form method="POST">',
+    '<form method="POST">',
     ('<div id="%s"><table class="form">'):format(empty(content.id) and 'content_create_form' or 'content_edit_form'),
     theme.hidden{attributes = {id = 'content_id'}, value = content.id},
     row:format('Title', theme.textfield{attributes = {id = 'content_title', size = 60}, value = content.title}),
@@ -239,6 +245,6 @@ function theme.content_form(content)
     row:format('Created on', content.created and format_date(content.created) or ''),
     ('<tr><td colspan="2" align="right">%s</td></tr>'):format(theme.button{attributes = {id = 'save_submit'}, value = 'Save'}),
     '</table></div>',
-		'</form>',
+    '</form>',
   }
 end
