@@ -113,23 +113,12 @@ function save_service()
 end
 
 function router()
-  local rs, err, ipp, current_page, num_pages, count, content, id
+  local rs, err, ipp, current_page, num_pages, count, content, id, arg1
 
-  id = arg(1)
-  if not empty(id) then
-    content = content_load(id)
+  arg1 = arg(1)
 
-    if empty(content) then
-      page_set_title 'Page not found'
-      header('header', 404)
-      return ''
-    elseif not content_access(content, 'read') then
-      page_set_title 'Access denied'
-      header('status', 401)
-      return ''
-    end
-
-    if arg(1) == 'create' then
+  if not empty(arg1) then
+    if arg1 == 'create' then
       if not content_access(content, 'create') then
         page_set_title 'Access denied'
         header('status', 401)
@@ -142,6 +131,18 @@ function router()
 
       page_set_title 'Create content'
       return theme.content_form{}
+    end
+
+    content = content_load(arg1)
+
+    if empty(content) then
+      page_set_title 'Page not found'
+      header('header', 404)
+      return ''
+    elseif not content_access(content, 'read') then
+      page_set_title 'Access denied'
+      header('status', 401)
+      return ''
     end
 
     if arg(2) == 'edit' then
