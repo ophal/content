@@ -1,15 +1,15 @@
 local env, theme, _GET, tonumber, ceil = env, theme, _GET, tonumber, math.ceil
 local tinsert, tconcat, pairs, debug = table.insert, table.concat, pairs, debug
 local pager, l, page_set_title, arg = pager, l, page_set_title, arg
-local tonumber, format_date, ophal, read = tonumber, format_date, ophal, io.read
+local tonumber, format_date, read = tonumber, format_date, io.read
 local empty, add_js, _SESSION = seawolf.variable.empty, add_js, _SESSION
 local header, json, type, time = header, require 'dkjson', type, os.time
-local print_t, require = print_t, require
+local print_t, require, modules = print_t, require, ophal.modules
 local error = error
 
 module 'ophal.modules.content'
 
-local user_load, user_is_logged_in, user_access
+local user
 
 --[[
   Implements hook_init().
@@ -17,9 +17,7 @@ local user_load, user_is_logged_in, user_access
 function init()
   db_query = env.db_query
   db_last_insert_id = env.db_last_insert_id
-  user_load = ophal.modules.user.user_load
-  user_access = ophal.modules.user.user_access
-  user_is_logged_in = ophal.modules.user.user_is_logged_in
+  user = modules.user
 end
 
 --[[
@@ -50,25 +48,25 @@ end
 function content_access(content, action)
   local account = _SESSION.user
 
-  if user_access 'administer content' then
+  if user.access 'administer content' then
     return true
   end
 
   if action == 'create' then
-    return user_access 'create content'
+    return user.access 'create content'
   elseif action == 'update' then
-    return user_access 'edit own content' and content.user_id == account.id
+    return user.access 'edit own content' and content.user_id == account.id
   elseif action == 'read' then
-    return user_access 'access content'
+    return user.access 'access content'
   elseif action == 'delete' then
-    return user_access 'delete own content' and content.user_id == account.id
+    return user.access 'delete own content' and content.user_id == account.id
   end
 end
 
 function save_service()
   local input, parsed, pos, err, output, account, action, id
 
-  if not user_is_logged_in() then
+  if not user.is_logged_in() then
     header('status', 401)
   else
     header('content-type', 'application/json; charset=utf-8')
@@ -162,7 +160,7 @@ function router()
       page_set_title(content.title)
       return function ()
         print_t{'content_page',
-          account = user_load{id = content.user_id},
+          account = user.load{id = content.user_id},
           content = content,
           format_date = format_date
         }
