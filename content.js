@@ -15,6 +15,8 @@ $(document).ready(function() {
       title: $('#content_title', form).val(),
       teaser: $('#content_teaser', form).val(),
       body: $('#content_body', form).val(),
+      status: $('#content_status', form).is(':checked'),
+      promote: $('#content_promote', form).is(':checked'),
     }
 
     /* Fetch auth token */

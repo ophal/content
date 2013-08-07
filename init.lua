@@ -90,9 +90,9 @@ function save_service()
         output.error = err
       elseif 'table' == type(parsed) and not empty(parsed) then
         if action == 'create' then
-          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, created) VALUES(?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, time())
+          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, status, promote, created) VALUES(?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, parsed.status, parted.promote, time())
         elseif action == 'update' then
-          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, time(), id)
+          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ?, promote = ?, status = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, parsed.status, parsed.promote, time(), id)
         end
 
         if err then
@@ -158,12 +158,19 @@ function router()
       return theme.content_form(content)
     else
       page_set_title(content.title)
-      return function ()
-        print_t{'content_page',
-          account = user.load{id = content.user_id},
-          content = content,
-          format_date = format_date
-        }
+      if content.status or user.access 'administer content' then
+        page_set_title(content.title)
+        return function ()
+          print_t{'content_page',
+            account = user.load{id = content.user_id},
+            content = content,
+            format_date = format_date
+          }
+        end
+      else
+        page_set_title 'Access denied'
+        header('status', 401)
+        return ''
       end
     end
   else
@@ -173,10 +180,11 @@ end
 
 function frontpage()
   local rows = {}
-  local rs, err, count, current_page, ipp, num_pages
+  local rs, err, count, current_page, ipp, num_pages, query
 
   -- Count rows
-  rs, err = db_query 'SELECT count(*) FROM content WHERE status = 1 AND promote = 1 ORDER BY created DESC'
+  query = ('SELECT count(*) FROM content WHERE promote = 1 %s ORDER BY created DESC'):format(user.is_logged_in() and '' or 'AND status = 1')
+  rs, err = db_query(query)
   if err then
     error(err)
   else
@@ -189,7 +197,8 @@ function frontpage()
   num_pages = ceil(count/ipp)
 
   -- Render list
-  rs, err = db_query('SELECT * FROM content WHERE status = 1 ORDER BY created DESC LIMIT ?, ?', (current_page -1)*ipp, ipp)
+  query = ('SELECT * FROM content WHERE promote = 1 %s ORDER BY created DESC LIMIT ?, ?'):format(user.is_logged_in() and '' or 'AND status = 1')
+  rs, err = db_query(query, (current_page -1)*ipp, ipp)
   if err then
     error(err)
   else
@@ -240,7 +249,8 @@ function theme.content_form(content)
     row:format('Title', theme.textfield{attributes = {id = 'content_title', size = 60}, value = content.title}),
     row:format('Teaser', theme.textarea{attributes = {id = 'content_teaser', cols = 60, rows = 10}, value = content.teaser}),
     row:format('Body', theme.textarea{attributes = {id = 'content_body', cols = 60, rows = 15}, value = content.body}),
-    row:format('Status', empty(content.status) and 'Unplished' or 'Published'),
+    row:format('Status', theme{'checkbox', attributes = {id = 'content_status'}, value = content.status}),
+    row:format('Promote to frontpage', theme{'checkbox', attributes = {id = 'content_promote'}, value = content.promote}),
     row:format('Created on', content.created and format_date(content.created) or ''),
     ('<tr><td colspan="2" align="right">%s</td></tr>'):format(theme.button{attributes = {id = 'save_submit'}, value = 'Save'}),
     '</table></div>',
