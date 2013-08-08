@@ -89,10 +89,17 @@ function save_service()
       if err then
         output.error = err
       elseif 'table' == type(parsed) and not empty(parsed) then
+        if type(parsed.status) == 'boolean' then
+          parsed.status = parsed.status and 1 or 0
+        end
+        if type(parsed.promote) == 'boolean' then
+          parsed.promote = parsed.promote and 1 or 0
+        end
+
         if action == 'create' then
-          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, status, promote, created) VALUES(?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, parsed.status, parted.promote, time())
+          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, status, promote, created) VALUES(?, ?, ?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, parsed.status, parted.promote, time())
         elseif action == 'update' then
-          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, changed = ?, promote = ?, status = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, parsed.status, parsed.promote, time(), id)
+          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, status = ?, promote = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, parsed.status, parsed.promote, time(), id)
         end
 
         if err then
@@ -183,7 +190,7 @@ function frontpage()
   local rs, err, count, current_page, ipp, num_pages, query
 
   -- Count rows
-  query = ('SELECT count(*) FROM content WHERE promote = 1 %s ORDER BY created DESC'):format(user.is_logged_in() and '' or 'AND status = 1')
+  query = ('SELECT count(*) FROM content WHERE promote = 1 %s'):format(user.is_logged_in() and '' or 'AND status = 1')
   rs, err = db_query(query)
   if err then
     error(err)
