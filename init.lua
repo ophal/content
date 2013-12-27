@@ -36,7 +36,7 @@ function menu()
   return items
 end
 
-function content_load(id)
+function load(id)
   id = tonumber(id or 0)
 
   rs, err = db_query('SELECT * FROM content WHERE id = ?', id)
@@ -77,7 +77,7 @@ function save_service()
     action = empty(id) and 'create' or 'update'
     output = {}
 
-    content = content_load(id)
+    content = load(id)
 
     if not content_access(content, action) then
       header('status', 401)
@@ -140,7 +140,7 @@ function router()
       return theme.content_form{}
     end
 
-    content = content_load(arg1)
+    content = load(arg1)
 
     if empty(content) then
       page_set_title 'Page not found'
