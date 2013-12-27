@@ -130,8 +130,8 @@ function router()
         return ''
       end
 
-      add_js 'misc/jquery.js'
-      add_js 'misc/json2.js'
+      add_js 'libraries/jquery.min.js'
+      add_js 'libraries/json2.js'
       add_js 'modules/content/content.js'
 
       page_set_title 'Create content'
