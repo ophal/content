@@ -7,6 +7,8 @@ local header, json, type, time = header, require 'dkjson', type, os.time
 local print_t, require, modules = print_t, require, ophal.modules
 local error = error
 
+local set_global = set_global
+
 module 'ophal.modules.content'
 
 local user
@@ -167,6 +169,7 @@ function router()
       page_set_title(content.title)
       if content.status or user.access 'administer content' then
         page_set_title(content.title)
+        set_global('language', content.language)
         return function ()
           print_t{'content_page',
             account = user.load{id = content.user_id},
