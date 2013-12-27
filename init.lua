@@ -5,6 +5,7 @@ local tonumber, format_date, read = tonumber, format_date, io.read
 local empty, add_js, _SESSION = seawolf.variable.empty, add_js, _SESSION
 local header, json, type, time = header, require 'dkjson', type, os.time
 local print_t, require, modules = print_t, require, ophal.modules
+local module_invoke_all = module_invoke_all
 local error = error
 
 local set_global = set_global
@@ -44,7 +45,11 @@ function load(id)
     error(err)
   end
 
-  return rs:fetch(true)
+  content = rs:fetch(true)
+
+  module_invoke_all('content_load', content)
+
+  return content
 end
 
 function content_access(content, action)
