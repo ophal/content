@@ -38,6 +38,8 @@ function menu()
 end
 
 function load(id)
+  local rs, err, content
+
   id = tonumber(id or 0)
 
   rs, err = db_query('SELECT * FROM content WHERE id = ?', id)
