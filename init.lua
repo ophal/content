@@ -172,7 +172,7 @@ function router()
         set_global('language', content.language)
         return function ()
           print_t{'content_page',
-            account = user.load{id = content.user_id},
+            account = user.load{id = content.user_id} or user.load{id = 0},
             content = content,
             format_date = format_date
           }
