@@ -110,15 +110,15 @@ function save_service()
         end
 
         if action == 'create' then
-          rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, status, promote, created) VALUES(?, ?, ?, ?, ?, ?, ?)', _SESSION.user.id, parsed.title, parsed.teaser, parsed.body, parsed.status, parted.promote, time())
+          id, err = create(parsed)
         elseif action == 'update' then
-          rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, status = ?, promote = ?, changed = ? WHERE id = ?', parsed.title, parsed.teaser, parsed.body, parsed.status, parsed.promote, time(), id)
+          do _, err = update(parsed) end
         end
 
         if err then
           output.error = err
         else
-          output.content_id = action == 'create' and db_last_insert_id() or id
+          output.id = id
           output.success = true
         end
       end
@@ -128,6 +128,25 @@ function save_service()
   end
 
   theme.html = function () return output or '' end
+end
+
+function create(entity)
+  local rs, err
+  rs, err = db_query('INSERT INTO content(user_id, title, teaser, body, status, promote, created) VALUES(?, ?, ?, ?, ?, ?, ?)', _SESSION.user.id, entity.title, entity.teaser, entity.body, entity.status, entity.promote, time())
+  entity.id = db_last_insert_id()
+  if not err then
+    module_invoke_all('entity_after_save', entity)
+  end
+  return entity.id, err
+end
+
+function update(entity)
+  local rs, err
+  rs, err = db_query('UPDATE content SET title = ?, teaser = ?, body = ?, status = ?, promote = ?, changed = ? WHERE id = ?', entity.title, entity.teaser, entity.body, entity.status, entity.promote, time(), entity.id)
+  if not err then
+    module_invoke_all('entity_after_save', entity)
+  end
+  return rs, err
 end
 
 function router()
