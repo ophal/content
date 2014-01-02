@@ -48,6 +48,7 @@ function load(id)
   end
 
   content = rs:fetch(true)
+  content.type = 'content'
 
   module_invoke_all('content_load', content)
 
@@ -98,6 +99,9 @@ function save_service()
       if err then
         output.error = err
       elseif 'table' == type(parsed) and not empty(parsed) then
+        parsed.id = id
+        parsed.type = 'content'
+
         if type(parsed.status) == 'boolean' then
           parsed.status = parsed.status and 1 or 0
         end
