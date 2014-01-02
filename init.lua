@@ -233,7 +233,7 @@ function frontpage()
 
   -- Calculate current page
   current_page = tonumber(_GET.page) or 1
-  ipp = 20
+  ipp = 10
   num_pages = ceil(count/ipp)
 
   -- Render list
@@ -249,7 +249,7 @@ function frontpage()
 
   return function ()
     print_t{'content_frontpage', rows = rows}
-    return (num_pages > 1 and theme.pager(pager('frontpage', num_pages, current_page)) or '')
+    print_t{'pager', pages = pager('content', num_pages, current_page)}
   end
 end
 
@@ -280,20 +280,18 @@ function theme.content_frontpage(variables)
 end
 
 function theme.content_form(content)
-  local row = '<tr><td class="field-name" valign="top">%s:</td><td>%s</td></tr>'
-
-  return tconcat{
-    '<form method="POST">',
-    ('<div id="%s"><table class="form">'):format(empty(content.id) and 'content_create_form' or 'content_edit_form'),
-    theme.hidden{attributes = {id = 'content_id'}, value = content.id},
-    row:format('Title', theme.textfield{attributes = {id = 'content_title', size = 60}, value = content.title}),
-    row:format('Teaser', theme.textarea{attributes = {id = 'content_teaser', cols = 60, rows = 10}, value = content.teaser}),
-    row:format('Body', theme.textarea{attributes = {id = 'content_body', cols = 60, rows = 15}, value = content.body}),
-    row:format('Status', theme{'checkbox', attributes = {id = 'content_status'}, value = content.status}),
-    row:format('Promote to frontpage', theme{'checkbox', attributes = {id = 'content_promote'}, value = content.promote}),
-    row:format('Created on', content.created and format_date(content.created) or ''),
-    ('<tr><td colspan="2" align="right">%s</td></tr>'):format(theme.button{attributes = {id = 'save_submit'}, value = 'Save'}),
-    '</table></div>',
-    '</form>',
+  return theme{'form', method = 'POST',
+    attributes = {id = empty(content.id) and 'content_create_form' or 'content_edit_form'},
+    entity = content,
+    elements = {
+      {'hidden', attributes = {id = 'entity_id'}, value = content.id},
+      {'textfield', title = 'Title', attributes = {id = 'content_title', size = 60}, value = content.title, weight = 10},
+      {'textarea', title = 'Teaser', attributes = {id = 'content_teaser', cols = 60, rows = 10}, value = content.teaser, weight = 20},
+      {'textarea', title = 'Body', attributes = {id = 'content_body', cols = 60, rows = 15}, value = content.body, weight = 30},
+      {'checkbox', title = 'Status', attributes = {id = 'content_status'}, value = content.status, weight = 40},
+      {'checkbox', title = 'Promote to frontpage', attributes = {id = 'content_promote'}, value = content.promote, weight = 50},
+      {'markup', title = 'Created on', value = content.created and format_date(content.created) or '', weight = 60},
+      {'button', attributes = {id = 'save_submit'}, value = 'Save', weight = 70},
+    },
   }
 end
