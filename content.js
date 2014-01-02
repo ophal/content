@@ -4,7 +4,7 @@ $(document).ready(function() {
   var form = $('#content_edit_form, #content_create_form');
 
   $('#save_submit', form).click(function() {
-    var id = $('#content_edit_form #content_id').val();
+    var id = $('#content_edit_form #entity_id').val();
 
     var endpoint = '/content/save';
     if (id) {
@@ -18,6 +18,7 @@ $(document).ready(function() {
       status: $('#content_status', form).is(':checked'),
       promote: $('#content_promote', form).is(':checked'),
     }
+    $(document).trigger('ophal:entity:save', {context: form, entity: content});
 
     /* Fetch auth token */
     $.ajax({
@@ -29,7 +30,7 @@ $(document).ready(function() {
       processData: false,
       success: function (data) {
         if (data.success) {
-          window.location = '/content/' + data.content_id;
+          window.location = '/content/' + data.id;
         }
         else {
           if (data.success) {
