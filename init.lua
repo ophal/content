@@ -1,11 +1,11 @@
 local env, theme, _GET, tonumber, ceil = env, theme, _GET, tonumber, math.ceil
 local tinsert, tconcat, pairs, debug = table.insert, table.concat, pairs, debug
 local pager, l, page_set_title, arg = pager, l, page_set_title, arg
-local tonumber, format_date, read = tonumber, format_date, io.read
+local tonumber, format_date = tonumber, format_date
 local empty, add_js, _SESSION = seawolf.variable.empty, add_js, _SESSION
 local header, json, type, time = header, require 'dkjson', type, os.time
 local print_t, require, modules = print_t, require, ophal.modules
-local module_invoke_all = module_invoke_all
+local module_invoke_all, request_get_body = module_invoke_all, request_get_body
 local error = error
 
 local set_global = set_global
@@ -94,7 +94,7 @@ function save_service()
       output.error = 'No such content.'
     else
       output.success = false
-      input = read '*a'
+      input = request_get_body()
       parsed, pos, err = json.decode(input, 1, nil)
       if err then
         output.error = err
