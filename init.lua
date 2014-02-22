@@ -49,9 +49,11 @@ function load(id)
   end
 
   content = rs:fetch(true)
-  content.type = 'content'
 
-  module_invoke_all('content_load', content)
+  if content then
+    content.type = 'content'
+    module_invoke_all('content_load', content)
+  end
 
   return content
 end
