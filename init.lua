@@ -189,7 +189,7 @@ function router()
         return ''
       end
 
-      add_js 'misc/jquery.js'
+      add_js 'misc/jquery.min.js'
       add_js 'misc/json2.js'
       add_js 'modules/content/content.js'
       page_set_title('Edit "' .. content.title .. '"')
