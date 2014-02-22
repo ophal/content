@@ -33,6 +33,7 @@ function menu()
   }
   items['content/save'] = {
     page_callback = 'save_service',
+    format = 'json',
   }
   return items
 end
@@ -79,8 +80,6 @@ function save_service()
   if not user.is_logged_in() then
     header('status', 401)
   else
-    header('content-type', 'application/json; charset=utf-8')
-
     id = tonumber(arg(2) or '')
     action = empty(id) and 'create' or 'update'
     output = {}
@@ -123,11 +122,9 @@ function save_service()
         end
       end
     end
-
-    output = json.encode(output)
   end
 
-  theme.html = function () return output or '' end
+  return output
 end
 
 function create(entity)
@@ -189,8 +186,8 @@ function router()
         return ''
       end
 
-      add_js 'misc/jquery.min.js'
-      add_js 'misc/json2.js'
+      add_js 'libraries/jquery.min.js'
+      add_js 'libraries/json2.js'
       add_js 'modules/content/content.js'
       page_set_title('Edit "' .. content.title .. '"')
 
