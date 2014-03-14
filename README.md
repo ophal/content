@@ -1,3 +1,5 @@
+NOTICE: This module is now part of Ophal core http://github.com/ophal/core
+
 Ophal CMS module
 ============================
 
